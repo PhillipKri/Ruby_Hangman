@@ -1,4 +1,5 @@
 require 'yaml'
+require 'json'
 
 class Hangman
   attr_reader :word
@@ -23,6 +24,25 @@ class Hangman
     file.close
   end
 
+  def save_to_json
+    data = {
+      :word => @word,
+      :display => @display,
+      :counter => @counter
+    }
+    f = File.open('json_save.json', 'w')
+    File.write(f,JSON.dump(data))
+    f.close
+  end
+
+  def load_from_json
+    f = File.open('json_save.json')
+    data = JSON.load(f)
+    @word = data['word']
+    @display = data['display']
+    @counter = data['counter']
+  end
+
   def load_game
     data = YAML.load(File.open('savefile.yml'))
     @word = data[:word]
@@ -44,18 +64,20 @@ class Hangman
   end
 
   def play
-    if File.exist? ('savefile.yml')
+    if File.exist? ('savefile.yml') or File.exist? ('json_save.json') 
       puts 'Will you reload a save file? (Y/N)'
       if gets.chomp.downcase == 'y'
-        load_game
+        # load_game
+        load_from_json
         display_res
       end
     end
     until display.join == word
       if @counter == 13
         puts "You lose! The actual word was: #{word}"
-        if File.exist? ('savefile.yml')
-          File.delete 'savefile.yml'
+        if File.exist? ('json_save.json')
+          # File.delete 'savefile.yml'
+          File.delete 'json_save.json'
           exit
         else
         exit
@@ -67,12 +89,14 @@ class Hangman
           display[index] = char_guess
         end
       end
-      display_res
+      # display_res
       end
     end
+    display_res
     puts 'Congratulations!! You solved it'
-    if File.exist? ('savefile.yml')
-      File.delete 'savefile.yml'
+    if File.exist? ('json_save.json')
+      # File.delete 'savefile.yml'
+      File.delete 'json_save.json'
       exit
     else
     exit
@@ -81,9 +105,11 @@ class Hangman
 
   def guess
     puts 'Choose a letter, or if you wish to save then type "1"'
+    display_res
     letter = gets.chomp
     if letter == '1'
-      save_game
+      # save_game
+      save_to_json
       puts 'Game saved'
       puts 'Do you want to leave? (Y/N)'
       if gets.chomp.downcase == 'y'
@@ -97,6 +123,7 @@ class Hangman
     @counter += 1
     letter
   end
+
   
   
   def display_res
