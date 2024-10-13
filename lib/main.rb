@@ -1,4 +1,5 @@
-# puts 'test'
+require 'yaml'
+
 class Hangman
   attr_reader :word
   attr_accessor :display
@@ -9,6 +10,24 @@ class Hangman
     @word.length.times do
       @display << "_"
     end
+  end
+
+  def save_game
+    data = {
+      :word => @word,
+      :display => @display,
+      :counter => @counter
+    }
+    file = File.open 'savefile.yml', 'w'
+    file.puts YAML.dump(data)
+    file.close
+  end
+
+  def load_game
+    data = YAML.load(File.open('savefile.yml'))
+    @word = data[:word]
+    @display = data[:display]
+    @counter = data[:counter]
   end
 
 
@@ -25,27 +44,52 @@ class Hangman
   end
 
   def play
+    if File.exist? ('savefile.yml')
+      puts 'Will you reload a save file? (Y/N)'
+      if gets.chomp.downcase == 'y'
+        load_game
+        display_res
+      end
+    end
     until display.join == word
-      char_guess = guess
       if @counter == 13
-        puts 'You lose!'
+        puts "You lose! The actual word was: #{word}"
+        if File.exist? ('savefile.yml')
+          File.delete 'savefile.yml'
+          exit
+        else
         exit
+        end
       else
-      @word.chars.each_with_index do |element, index|
+      char_guess = guess
+      word.chars.each_with_index do |element, index|
         if element == char_guess
           display[index] = char_guess
         end
       end
-      p display.join
+      display_res
       end
     end
     puts 'Congratulations!! You solved it'
+    if File.exist? ('savefile.yml')
+      File.delete 'savefile.yml'
+      exit
+    else
     exit
+    end
   end
 
   def guess
-    puts 'Choose a letter'
+    puts 'Choose a letter, or if you wish to save then type "1"'
     letter = gets.chomp
+    if letter == '1'
+      save_game
+      puts 'Game saved'
+      puts 'Do you want to leave? (Y/N)'
+      if gets.chomp.downcase == 'y'
+        exit
+      end
+    end
     until /[a-z]/.match(letter)
       puts 'invalid character, try again'
       letter = gets.chomp
@@ -53,9 +97,14 @@ class Hangman
     @counter += 1
     letter
   end
+  
+  
+  def display_res
+    puts display.join
+  end
 end
 
 
-test = Hangman.new
-p test.word
-p test.play
+game = Hangman.new
+game.play
+
